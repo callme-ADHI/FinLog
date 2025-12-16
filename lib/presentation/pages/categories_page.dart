@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_constants.dart';
+import '../../domain/entities/transaction_entity.dart';
 import 'transactions_page.dart';
 import 'package:provider/provider.dart';
 import '../../domain/repositories/transaction_repository.dart';
@@ -138,11 +139,86 @@ class _CategoriesPageState extends State<CategoriesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final repo = context.read<TransactionRepository>();
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Categories')),
-      body: ListView(
-        children: [
-          _buildSectionHeader('My Categories'),
+      appBar: AppBar(title: const Text('Categories')),
+      body: StreamBuilder<void>(
+        stream: repo.onDataChanged,
+        builder: (context, _) {
+          return FutureBuilder<Map<String, double>>(
+            future: _getTotals(repo),
+            builder: (context, snapshot) {
+              final totalIncome = snapshot.data?['income'] ?? 0.0;
+              final totalSpending = snapshot.data?['spending'] ?? 0.0;
+              
+              return ListView(
+                children: [
+                  // Summary Cards
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.arrow_downward, color: Colors.greenAccent, size: 18),
+                                    SizedBox(width: 4),
+                                    Text('Total Income', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '₹${totalIncome.toStringAsFixed(0)}',
+                                  style: const TextStyle(color: Colors.greenAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.arrow_upward, color: Colors.redAccent, size: 18),
+                                    SizedBox(width: 4),
+                                    Text('Total Spending', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '₹${totalSpending.toStringAsFixed(0)}',
+                                  style: const TextStyle(color: Colors.redAccent, fontSize: 20, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  _buildSectionHeader('My Categories'),
           if (_userCategories.isEmpty)
              const Padding(
                padding: EdgeInsets.all(16.0),
@@ -186,7 +262,11 @@ class _CategoriesPageState extends State<CategoriesPage> {
             // No trailing action for system cats
           )),
           const SizedBox(height: 80), // Bottom padding for FAB
-        ],
+                ],
+              );
+            },
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'cat_fab',
@@ -219,5 +299,21 @@ class _CategoriesPageState extends State<CategoriesPage> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<Map<String, double>> _getTotals(TransactionRepository repo) async {
+    final transactions = await repo.getTransactions();
+    double income = 0;
+    double spending = 0;
+    
+    for (var t in transactions) {
+      if (t.type == TransactionType.credit) {
+        income += t.amount;
+      } else {
+        spending += t.amount;
+      }
+    }
+    
+    return {'income': income, 'spending': spending};
   }
 }

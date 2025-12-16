@@ -328,6 +328,38 @@ class TransactionRepositoryImpl implements TransactionRepository {
     return false;
   }
 
+  // === Historical Analysis & Setup Implementation ===
+
+  @override
+  Future<void> saveHistoricalStats(double income, double spending) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('historical_income', income);
+    await prefs.setDouble('historical_spending', spending);
+    print('💾 REPO: Saved Historical Stats - Income: $income, Spending: $spending');
+  }
+
+  @override
+  Future<Map<String, double>> getHistoricalStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'income': prefs.getDouble('historical_income') ?? 0.0,
+      'spending': prefs.getDouble('historical_spending') ?? 0.0,
+    };
+  }
+
+  @override
+  Future<void> setSetupTimestamp(int timestamp) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('setup_timestamp', timestamp);
+    print('💾 REPO: Set Setup Timestamp: $timestamp');
+  }
+
+  @override
+  Future<int> getSetupTimestamp() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('setup_timestamp') ?? 0;
+  }
+
   @override
   Future<void> updateTransaction(TransactionEntity transaction) async {
     // Get old transaction to calculate balance difference
@@ -437,22 +469,46 @@ class TransactionRepositoryImpl implements TransactionRepository {
   @override
   Future<double> getCurrentBalance() async {
     final prefs = await SharedPreferences.getInstance();
-    // If current balance exists, return it
-    // Otherwise calculate it from opening balance + transactions
-    final currentBalance = prefs.getDouble('current_balance');
-    if (currentBalance != null) {
-      return currentBalance;
+    
+    // Get the anchor balance and the time it was set
+    final anchorBalance = prefs.getDouble('anchor_balance') ?? 0.0;
+    final anchorTimestamp = prefs.getInt('anchor_timestamp') ?? 0;
+    
+    // Only count transactions AFTER the anchor was set
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'transactions',
+      where: 'timestamp > ?',
+      whereArgs: [anchorTimestamp],
+    );
+    
+    double credit = 0;
+    double debit = 0;
+
+    for (var row in result) {
+      final t = TransactionModel.fromMap(row);
+      if (t.type == TransactionType.credit) {
+        credit += t.amount;
+      } else {
+        debit += t.amount;
+      }
     }
-    // First time - calculate and store
-    final balance = await getBalance();
-    await prefs.setDouble('current_balance', balance);
-    return balance;
+
+    final calculated = anchorBalance + credit - debit;
+    print('💰 Balance: Anchor(₹$anchorBalance @ $anchorTimestamp) + Credits(₹$credit) - Debits(₹$debit) = ₹$calculated');
+    return calculated;
   }
 
   @override
   Future<void> updateCurrentBalance(double balance) async {
+    // Simply store the new balance and current timestamp as anchor
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('current_balance', balance);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    
+    await prefs.setDouble('anchor_balance', balance);
+    await prefs.setInt('anchor_timestamp', now);
+    
+    print('💰 Balance Anchor Set: ₹$balance at $now');
     _controller.add(null);
   }
 

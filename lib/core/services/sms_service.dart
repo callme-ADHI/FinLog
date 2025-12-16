@@ -45,14 +45,17 @@ class SmsService {
     }
   }
 
-  Future<int> scanAllSms() async {
+  // REMOVED: scanAllSms() - was incorrectly importing ALL SMS to database
+  // Use analyzeAllSms() for historical stats (Profile)
+  // Use scanTodaySms() to save today's transactions (Today page)
+
+
+  // Analyze all SMS for historical stats WITHOUT importing
+  Future<Map<String, double>> analyzeAllSms() async {
     try {
-      print("FinLog: Starting SMS scan...");
+      print("FinLog: Starting SMS ANALYSIS...");
       final List<dynamic> messages = await platform.invokeMethod('scanAllSms');
-      print("FinLog: Received ${messages.length} messages from native");
-      print("FinLog: Received ${messages.length} messages from native");
       
-      // Convert to List<Map<String, dynamic>> safely
       List<Map<String, dynamic>> batch = [];
       for (var msg in messages) {
         if (msg is Map) {
@@ -64,13 +67,97 @@ class SmsService {
         }
       }
 
-      print("FinLog: Sending batch of ${batch.length} to processSms");
-      final imported = await processSms.batchProcess(batch);
+      print("FinLog: Sending batch of ${batch.length} to analyzeBatch");
+      return await processSms.analyzeBatch(batch);
+    } catch (e) {
+      print("Error analyzing SMS: $e");
+      return {};
+    }
+  }
+
+  // Scan only TODAY's SMS messages and import them
+  Future<int> scanTodaySms() async {
+    try {
+      print("FinLog: Starting TODAY's SMS scan...");
+      final List<dynamic> messages = await platform.invokeMethod('scanAllSms');
       
-      print("FinLog: Scan complete. Imported $imported transactions");
+      // Get today's start timestamp
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+      
+      print("FinLog: Filtering ${messages.length} messages for today (since $todayStart)");
+      
+      List<Map<String, dynamic>> todayBatch = [];
+      for (var msg in messages) {
+        if (msg is Map) {
+          final timestamp = (msg['timestamp'] is int) ? msg['timestamp'] : 0;
+          // Only include messages from today
+          if (timestamp >= todayStart) {
+            todayBatch.add({
+              'sender': msg['sender']?.toString() ?? '',
+              'body': msg['body']?.toString() ?? '',
+              'timestamp': timestamp,
+            });
+          }
+        }
+      }
+
+      print("FinLog: Found ${todayBatch.length} messages from TODAY");
+      
+      if (todayBatch.isEmpty) {
+        print("FinLog: No new messages from today to process");
+        return 0;
+      }
+      
+      final imported = await processSms.batchProcess(todayBatch);
+      print("FinLog: Today scan complete. Imported $imported transactions");
       return imported;
     } catch (e, stack) {
-      print("Error scanning SMS: $e");
+      print("Error scanning today's SMS: $e");
+      print("Stack trace: $stack");
+      return 0;
+    }
+  }
+
+  // Scan SMS for a specific date and import them
+  Future<int> scanDateSms(DateTime date) async {
+    try {
+      print("FinLog: Starting SMS scan for ${date.toString().split(' ')[0]}...");
+      final List<dynamic> messages = await platform.invokeMethod('scanAllSms');
+      
+      // Get date range
+      final dateStart = DateTime(date.year, date.month, date.day).millisecondsSinceEpoch;
+      final dateEnd = DateTime(date.year, date.month, date.day, 23, 59, 59).millisecondsSinceEpoch;
+      
+      print("FinLog: Filtering ${messages.length} messages for date range $dateStart - $dateEnd");
+      
+      List<Map<String, dynamic>> dateBatch = [];
+      for (var msg in messages) {
+        if (msg is Map) {
+          final timestamp = (msg['timestamp'] is int) ? msg['timestamp'] : 0;
+          // Only include messages from the selected date
+          if (timestamp >= dateStart && timestamp <= dateEnd) {
+            dateBatch.add({
+              'sender': msg['sender']?.toString() ?? '',
+              'body': msg['body']?.toString() ?? '',
+              'timestamp': timestamp,
+            });
+          }
+        }
+      }
+
+      print("FinLog: Found ${dateBatch.length} messages from selected date");
+      
+      if (dateBatch.isEmpty) {
+        print("FinLog: No messages found for this date");
+        return 0;
+      }
+      
+      final imported = await processSms.batchProcess(dateBatch);
+      print("FinLog: Date scan complete. Imported $imported transactions");
+      return imported;
+    } catch (e, stack) {
+      print("Error scanning date SMS: $e");
       print("Stack trace: $stack");
       return 0;
     }

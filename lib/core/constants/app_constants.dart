@@ -14,13 +14,20 @@ class AppConstants {
     'FEDERAL', 'FEDFBK', 'FEDFBNK', 
     'INDUS', 'INDUSIND',
     'RBL', 'RBLBNK',
-    'HSBC', 'SC', 'SCBL'
+    'HSBC', 'SC', 'SCBL',
+    'IDBI', 'IDIB', 'IOB', 'UCO', 'CBI', 
+    'SIB', 'KVB', 'KTK', 'JSB', 'SVC', 'DBS',
+    'PAYTM', 'GPAY', 'AMAZON', 'WAZIR', 'COIN',
+    'MAH', 'BOM',
+    // Generic suffixes often used
+    'BANK', 'BNK', 'BK',
   ];
 
   static const List<String> debitKeywords = [
     'debited', 'debit', 'debited from', 'debited to', 'debited by',
     'spent', 'paid', 'sent', 'transferred', 'withdrawn', 'withdraw',
-    'purchase', 'payment', 'pay', 'charged', 'used at'
+    'purchase', 'payment', 'pay', 'charged', 'used at',
+    'txn', 'txn of', 'purchase of', 'transaction of'
   ];
   
   static const List<String> creditKeywords = [
@@ -31,7 +38,7 @@ class AppConstants {
   static const List<String> upiKeywords = ['UPI', 'upi'];
 
   // Regex Patterns - more flexible for multi-bank support
-  static const String amountRegex = r'(?:Rs\.?|INR|₹)\s?([\d,]+(?:\.\d{1,2})?)';
+  static const String amountRegex = r'(?:Rs\.?|INR|₹|MRP)\s?[\.]?\s?([\d,]+(?:\.\d{1,2})?)';
   static const String utrRegex = r'(?:UTR|Ref|Txn|Transaction ID|RRN|IMPS Ref|UPI Ref)\s*(?:No\.?)?[:\-\s]*([A-Za-z0-9]{10,})';
   
   // Category Keywords
@@ -43,5 +50,7 @@ class AppConstants {
     'Groceries': ['bigbasket', 'blinkit', 'zepto', 'dmart', 'grocery', 'kirana', 'fruit', 'vegetable'],
     'Health': ['pharmacy', 'medical', 'hospital', 'doctor', 'lab', 'clinc'],
     'Entertainment': ['netflix', 'prime', 'hotstar', 'movie', 'cinema', 'bookmyshow'],
+    'Investment': ['zerodha', 'groww', 'upstox', 'coin', 'wazirx', 'crypto', 'stock', 'mutual fund', 'sip', 'lic', 'insurance'],
+    'Transfer': ['sent to', 'transfer', 'upi', 'gpay', 'phonepe', 'paytm'],
   };
 }

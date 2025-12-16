@@ -59,11 +59,27 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
     
     final smsService = context.read<SmsService>();
     try {
-      final count = await smsService.scanAllSms();
+      // Step 1: Analyze ALL SMS for Profile Page (History)
+      // This does NOT import to Dashboard
+      print("Onboarding: Starting Historical Analysis...");
+      final stats = await smsService.analyzeAllSms();
+      
       setState(() {
-        _importedCount = count;
+        _importedCount = 0; // We didn't import any transactions "live"
         _isScanning = false;
       });
+      
+      // Step 2: Set "NOW" as the starting point for live tracking
+      final repo = context.read<TransactionRepository>();
+      await repo.setSetupTimestamp(DateTime.now().millisecondsSinceEpoch);
+      
+      // Optional: If analysis found a balance, we could store it temporarily to hint the next page
+      final detectedBalance = stats['balance'];
+      if (detectedBalance != null && stats['hasBalance'] == 1.0) {
+        // We'll pass this via a temporary mechanism or update the repo
+        // For now, let's just print it.
+        print("Onboarding: Detected likely balance: $detectedBalance");
+      }
       
       await Future.delayed(const Duration(seconds: 1));
       _nextStep();
@@ -77,29 +93,15 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
   Future<void> _saveBalanceAndComplete(double currentBalance) async {
     final repo = context.read<TransactionRepository>();
     
-    // Set the current balance
+    // Set the current balance - THIS IS "DAY 0"
     await repo.updateCurrentBalance(currentBalance);
     
-    // Calculate opening balance from current balance and transactions
-    // Opening Balance = Current Balance - (Total Credits - Total Debits)
-    final transactions = await repo.getTransactions();
-    double totalCredits = 0;
-    double totalDebits = 0;
+    // For Fresh Start strategy:
+    // Opening balance IS the current balance because there are NO transactions yet.
+    // Dashboard starts empty.
     
-    for (var transaction in transactions) {
-      if (transaction.type == TransactionType.credit) {
-        totalCredits += transaction.amount;
-      } else {
-        totalDebits += transaction.amount;
-      }
-    }
-    
-    // Opening balance is what you started with before all these transactions
-    final openingBalance = currentBalance - (totalCredits - totalDebits);
-    
-    // Save opening balance to SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('opening_balance', openingBalance);
+    await prefs.setDouble('opening_balance', currentBalance);
     await prefs.setBool('onboarding_completed', true);
     
     _nextStep(); // Go to completion screen

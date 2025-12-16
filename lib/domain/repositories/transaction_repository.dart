@@ -29,4 +29,10 @@ abstract class TransactionRepository {
   
   // Deduplication - Layer 3: Time window check
   Future<bool> hasSimilarRecent(double amount, String type, DateTime timestamp);
+  
+  // Historical Analysis & Setup
+  Future<void> saveHistoricalStats(double income, double spending);
+  Future<Map<String, double>> getHistoricalStats();
+  Future<void> setSetupTimestamp(int timestamp);
+  Future<int> getSetupTimestamp();
 }

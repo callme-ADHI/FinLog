@@ -3,7 +3,6 @@ import 'dashboard_page.dart';
 import 'transactions_page.dart';
 import 'monthly_analysis_page.dart';
 import 'categories_page.dart';
-import 'settings_page.dart';
 import 'manual_entry_page.dart';
 import 'today_analysis_page.dart';
 
@@ -32,7 +31,8 @@ class _HomeShellState extends State<HomeShell> {
         index: _currentIndex,
         children: _pages,
       ),
-      floatingActionButton: FloatingActionButton(
+      // Hide FAB on Today tab (it has its own Scan button)
+      floatingActionButton: _currentIndex == 1 ? null : FloatingActionButton(
         heroTag: 'main_fab',
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const ManualEntryPage()));

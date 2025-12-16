@@ -2,30 +2,87 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../../domain/entities/transaction_entity.dart';
+import '../../core/services/sms_service.dart';
 
-class TodayAnalysisPage extends StatelessWidget {
+class TodayAnalysisPage extends StatefulWidget {
   const TodayAnalysisPage({Key? key}) : super(key: key);
 
   @override
+  State<TodayAnalysisPage> createState() => _TodayAnalysisPageState();
+}
+
+class _TodayAnalysisPageState extends State<TodayAnalysisPage> {
+  bool _isScanning = false;
+
+  Future<void> _scanTodaySms() async {
+    setState(() => _isScanning = true);
+    
+    try {
+      final smsService = context.read<SmsService>();
+      final imported = await smsService.scanTodaySms();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(imported > 0 
+              ? 'Found $imported new transactions!' 
+              : 'No new transactions found today'),
+            backgroundColor: imported > 0 ? Colors.teal : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+    
+    if (mounted) {
+      setState(() => _isScanning = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final repo = context.read<TransactionRepository>();
+    
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('Today\'s Analysis'),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        title: const Text('Today\'s Analysis', style: TextStyle(fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: _isScanning 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : const Icon(Icons.refresh),
+            onPressed: _isScanning ? null : _scanTodaySms,
+            tooltip: 'Scan Today\'s SMS',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isScanning ? null : _scanTodaySms,
+        backgroundColor: _isScanning ? Colors.grey : Colors.tealAccent,
+        foregroundColor: Colors.black,
+        icon: _isScanning 
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+          : const Icon(Icons.sms),
+        label: Text(_isScanning ? 'Scanning...' : 'Scan Today'),
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          // Trigger rebuild by accessing repository
-          context.read<TransactionRepository>();
-        },
+        onRefresh: _scanTodaySms,
         child: StreamBuilder(
-          stream: context.watch<TransactionRepository>().onDataChanged,
+          stream: repo.onDataChanged,
           builder: (context, snapshot) {
             return FutureBuilder<Map<String, dynamic>>(
               future: _getTodayData(context),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator(color: Colors.tealAccent));
                 }
 
                 final data = snapshot.data!;
@@ -45,14 +102,14 @@ class TodayAnalysisPage extends StatelessWidget {
                           _buildSummaryCard(
                             'Income',
                             income,
-                            Colors.green,
+                            Colors.greenAccent,
                             Icons.arrow_downward,
                           ),
                           const SizedBox(width: 16),
                           _buildSummaryCard(
                             'Expenses',
                             expenses,
-                            Colors.red,
+                            Colors.redAccent,
                             Icons.arrow_upward,
                           ),
                         ],
@@ -64,19 +121,29 @@ class TodayAnalysisPage extends StatelessWidget {
                       // Today's Transactions
                       Text(
                         'Today\'s Transactions (${transactions.length})',
-                        style: Theme.of(context).textTheme.titleLarge,
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
                       
                       if (transactions.isEmpty)
-                        const Center(
+                        Center(
                           child: Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: Text('No transactions today'),
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              children: [
+                                Icon(Icons.inbox_outlined, size: 64, color: Colors.white.withOpacity(0.3)),
+                                const SizedBox(height: 16),
+                                Text('No transactions today', style: TextStyle(color: Colors.white.withOpacity(0.5))),
+                                const SizedBox(height: 8),
+                                Text('Tap "Scan Today" to check for new SMS', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12)),
+                              ],
+                            ),
                           ),
                         )
                       else
                         ..._buildTransactionList(transactions),
+                      
+                      const SizedBox(height: 80), // Space for FAB
                     ],
                   ),
                 );

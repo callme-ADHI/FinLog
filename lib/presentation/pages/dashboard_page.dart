@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/repositories/transaction_repository.dart';
+import '../../domain/entities/transaction_entity.dart';
+import '../../core/services/sms_service.dart';
 import '../widgets/spending_chart.dart'; // Import Chart
 import 'transactions_page.dart';
-import 'settings_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -13,6 +14,25 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  bool _isRefreshing = false;
+
+  Future<void> _onRefresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    
+    try {
+      final smsService = context.read<SmsService>();
+      final imported = await smsService.scanTodaySms();
+      print('🔄 Dashboard Refresh: Scanned and imported $imported new transactions');
+    } catch (e) {
+      print('❌ Dashboard Refresh Error: $e');
+    }
+    
+    if (mounted) {
+      setState(() => _isRefreshing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = context.read<TransactionRepository>();
@@ -25,8 +45,8 @@ class _DashboardPageState extends State<DashboardPage> {
         title: const Text('FinLog', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())),
+            icon: const Icon(Icons.person),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
           )
         ],
       ),
@@ -35,11 +55,7 @@ class _DashboardPageState extends State<DashboardPage> {
         builder: (context, snapshot) {
           print('🎨 DASHBOARD: StreamBuilder rebuilding! Snapshot state: ${snapshot.connectionState}');
           return RefreshIndicator(
-            onRefresh: () async {
-              // No-op effectively, just rebuilds
-              await Future.delayed(const Duration(milliseconds: 200));
-              setState(() {}); 
-            },
+            onRefresh: _onRefresh,
             child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -167,11 +183,11 @@ class _DashboardPageState extends State<DashboardPage> {
                ),
                const SizedBox(height: 24),
 
-              // 4. Recent Transactions Header & List
+              // 4. Today's Transactions Header & List
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   const Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                   const Text("Today's Transactions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                    TextButton(
                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TransactionsPage())), 
                      child: const Text('View All')
@@ -179,15 +195,62 @@ class _DashboardPageState extends State<DashboardPage> {
                 ],
               ),
               const SizedBox(height: 8),
-              SizedBox(
-                height: 350, 
-                child: const TransactionsPage(showAppBar: false), // Modified TransactionsPage to be embeddable?
-                // Note: TransactionsPage currently has Scaffold/AppBar. We should refactor it or just use it as is?
-                // The current Text says "reuse for now".
-                // Better to refactor TransactionPage to allow embedding or create a TransactionListWidget.
-                // For simplicity in this turn, I will assume TransactionsPage is refactored or just let it clip.
-                // Actually, let's just make a new widget inside Dashboard for recent list to look premium.
+              FutureBuilder<List<TransactionEntity>>(
+                future: repo.getTodayTransactions(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.inbox_outlined, size: 48, color: Colors.white.withOpacity(0.2)),
+                            const SizedBox(height: 8),
+                            Text('No transactions today', style: TextStyle(color: Colors.white.withOpacity(0.4))),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  
+                  final transactions = snapshot.data!;
+                  return Column(
+                    children: transactions.take(5).map((t) => Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      color: const Color(0xFF1E1E1E),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: t.type == TransactionType.credit 
+                            ? Colors.green.withOpacity(0.2) 
+                            : Colors.red.withOpacity(0.2),
+                          child: Icon(
+                            t.type == TransactionType.credit ? Icons.arrow_downward : Icons.arrow_upward,
+                            color: t.type == TransactionType.credit ? Colors.green : Colors.red,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          t.merchant.isNotEmpty ? t.merchant : t.category,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          t.category,
+                          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                        ),
+                        trailing: Text(
+                          '${t.type == TransactionType.credit ? '+' : '-'}₹${t.amount.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            color: t.type == TransactionType.credit ? Colors.greenAccent : Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    )).toList(),
+                  );
+                },
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

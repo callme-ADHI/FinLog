@@ -6,22 +6,32 @@ import 'dart:convert';
 class SmsParser {
   // Returns TransactionEntity if parsing successful and valid, else null
   static TransactionEntity? parseSms(String sender, String body, int timestamp) {
-    // 1. Sender Filter - check if sender CONTAINS any bank code
-    if (!isValidSender(sender)) {
-      print("❌ PARSER: Rejected sender '$sender' - not a bank");
-      return null; 
-    }
+    // 1. Loose Sender Filter
+    // We process EVERYTHING that looks even remotely useful. 
+    // We only skip purely numeric shortcodes if they don't look like banks, 
+    // but honestly, if it has "debited Rs 500", it's a transaction.
+    // So we primarily rely on content extraction.
 
     // 2. Extract transaction details
-    final type = detectType(body);
+    var type = detectType(body);
+    final amount = extractAmount(body);
+    
+    // Fallback: If "txn of" or "UPI txn" is found present but no explicit debit/credit keyword
+    if (type == null && amount != null) {
+       if (body.toLowerCase().contains('txn of') || 
+           body.toLowerCase().contains('upi txn') ||
+           body.toLowerCase().contains('purchase of')) {
+         type = TransactionType.debit;
+       }
+    }
+
     if (type == null) {
-      print("❌ PARSER: No debit/credit found in: ${body.substring(0, body.length > 50 ? 50 : body.length)}...");
+      // print("❌ PARSER: No debit/credit found in: ${body.substring(0, body.length > 50 ? 50 : body.length)}...");
       return null;  
     }
 
-    final amount = extractAmount(body);
     if (amount == null) {
-      print("❌ PARSER: No amount found in: ${body.substring(0, body.length > 50 ? 50 : body.length)}...");
+      // print("❌ PARSER: No amount found in: ${body.substring(0, body.length > 50 ? 50 : body.length)}...");
       return null; 
     }
 
@@ -32,9 +42,9 @@ class SmsParser {
     final accountNumber = extractAccountNumber(body);
     final txnDate = extractTransactionDate(body);
 
-    print("✅ PARSER: Valid transaction! Amount: $amount, Type: $type, Sender: $sender");
-    if (accountNumber != null) print("   Account: $accountNumber");
-    if (txnDate != null) print("   Date: ${txnDate.toString().split(' ')[0]}");
+    // print("✅ PARSER: Valid transaction! Amount: $amount, Type: $type, Sender: $sender");
+    // if (accountNumber != null) print("   Account: $accountNumber");
+    // if (txnDate != null) print("   Date: ${txnDate.toString().split(' ')[0]}");
 
     // Create transaction
     final transaction = TransactionEntity(
@@ -54,11 +64,9 @@ class SmsParser {
   }
 
   static bool isValidSender(String sender) {
-    final upperSender = sender.toUpperCase();
-    for (var bank in AppConstants.bankSenders) {
-      if (upperSender.contains(bank)) return true;
-    }
-    return false;
+     // Deprecated: We now check content first. 
+     // This method is kept for legacy or UI helpers if needed.
+     return sender.length >= 3;
   }
 
   static TransactionType? detectType(String body) {
@@ -71,6 +79,11 @@ class SmsParser {
     for (var keyword in AppConstants.creditKeywords) {
       if (lowerBody.contains(keyword.toLowerCase())) return TransactionType.credit;
     }
+    
+    // Contextual Checks
+    if (lowerBody.contains('sent to') || lowerBody.contains('paid to')) return TransactionType.debit;
+    if (lowerBody.contains('received from')) return TransactionType.credit;
+
     return null;
   }
 
@@ -82,6 +95,8 @@ class SmsParser {
     if (match != null) {
       String raw = match.group(1) ?? '';
       raw = raw.replaceAll(',', ''); // Remove commas
+      // Remove trailing dot if present (e.g. "500.")
+      if (raw.endsWith('.')) raw = raw.substring(0, raw.length - 1);
       return double.tryParse(raw);
     }
     return null;
@@ -115,7 +130,7 @@ class SmsParser {
 
   static DateTime? extractTransactionDate(String body) {
     // Pattern: "on 15/12/2025" or "on 15-12-25" or "on 15/12/25"
-    final regex = RegExp(r'on\s+(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})');
+    final regex = RegExp(r'(?:on|at)\s+(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})');
     final match = regex.firstMatch(body);
     if (match != null) {
       try {
@@ -125,7 +140,7 @@ class SmsParser {
         if (year < 100) year += 2000; // Convert 25 → 2025
         return DateTime(year, month, day);
       } catch (e) {
-        print('⚠️ PARSER: Error parsing date - $e');
+        // print('⚠️ PARSER: Error parsing date - $e');
         return null;
       }
     }
@@ -145,7 +160,7 @@ class SmsParser {
         if (raw.endsWith('.')) raw = raw.substring(0, raw.length - 1);
         return double.tryParse(raw);
       } catch (e) {
-        print('⚠️ PARSER: Error parsing balance - $e');
+        // print('⚠️ PARSER: Error parsing balance - $e');
         return null;
       }
     }

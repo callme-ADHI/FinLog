@@ -8,8 +8,9 @@ import 'data/repositories/transaction_repository_impl.dart';
 import 'domain/repositories/transaction_repository.dart';
 import 'domain/usecases/process_sms.dart';
 import 'core/services/sms_service.dart';
-import 'presentation/pages/home_shell.dart';
 import 'presentation/pages/onboarding_page.dart';
+import 'presentation/pages/profile_page.dart';
+import 'presentation/pages/home_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,31 +85,22 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: showOnboarding ? const OnboardingPage() : const HomeShell(),
+        home: showOnboarding ? const OnboardingPage() : HomeShell(),
+        routes: {
+          '/profile': (context) => const ProfilePage(),
+        },
       ),
     );
   }
 
-  // Background SMS scan on startup
+  // Background SMS scan on startup - DISABLED
+  // The user's flow is:
+  // 1. Profile scan = historical analysis only (no DB save)
+  // 2. Today scan = save to DB for tracking
+  // We should NOT auto-import on startup
   static void autoScanSmsOnStartup(SmsService smsService) async {
-    try {
-      // Check if SMS permission is granted
-      final status = await Permission.sms.status;
-      if (status.isGranted) {
-        print('🔄 Auto-scanning SMS on app startup...');
-        // Run in background without blocking UI
-        Future.delayed(const Duration(milliseconds: 500), () async {
-          try {
-            final count = await smsService.scanAllSms();
-            print('✅ Background scan complete: $count new transactions imported');
-          } catch (e) {
-            print('❌ Background scan error: $e');
-          }
-        });
-      }
-    } catch (e) {
-      print('❌ Auto-scan check failed: $e');
-    }
+    // Disabled: User must manually scan from Today page
+    print('ℹ️ Auto-scan disabled. Use Today page to scan new messages.');
   }
 }
 
@@ -130,18 +122,16 @@ class _SplashWrapperState extends State<SplashWrapper> {
     // Request SMS permissions
     final status = await Permission.sms.request();
     if (status.isGranted) {
-      // Navigate to HomeShell
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeShell()),
+          MaterialPageRoute(builder: (_) => HomeShell()),
         );
       }
     } else {
-      // Show error or retry
-      // For now, just navigate anyway but maybe show banner
+      // Even if denied, move to home (permissions handled in onboarding if shown)
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeShell()),
+          MaterialPageRoute(builder: (_) => HomeShell()),
         );
       }
     }

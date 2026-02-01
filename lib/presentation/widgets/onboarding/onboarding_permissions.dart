@@ -82,13 +82,13 @@ class _OnboardingPermissionsState extends State<OnboardingPermissions>
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade900.withOpacity(0.3),
+                    color: const Color(0xFF0F1729), // Dark navy
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.sms_outlined,
                     size: 50,
-                    color: Colors.blue.shade300,
+                    color: const Color(0xFF2D5F8D),
                   ),
                 ),
                 
@@ -160,13 +160,12 @@ class _OnboardingPermissionsState extends State<OnboardingPermissions>
                   child: ElevatedButton(
                     onPressed: _requestPermission,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.tealAccent,
-                      foregroundColor: Colors.black,
+                      backgroundColor: const Color(0xFF1E3A5F),
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 8,
-                      shadowColor: Colors.tealAccent.withOpacity(0.5),
+                      elevation: 0,
                     ),
                     child: const Text(
                       'Grant Permission',

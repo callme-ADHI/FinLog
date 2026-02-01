@@ -1,134 +1,227 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class OnboardingComplete extends StatefulWidget {
-  const OnboardingComplete({Key? key}) : super(key: key);
+class OnboardingBalance extends StatefulWidget {
+  final Function(double) onBalanceSet;
+
+  const OnboardingBalance({Key? key, required this.onBalanceSet})
+      : super(key: key);
 
   @override
-  State<OnboardingComplete> createState() => _OnboardingCompleteState();
+  State<OnboardingBalance> createState() => _OnboardingBalanceState();
 }
 
-class _OnboardingCompleteState extends State<OnboardingComplete>
+class _OnboardingBalanceState extends State<OnboardingBalance>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+  final TextEditingController _controller = TextEditingController();
+  late AnimationController _animController;
+  late Animation<double> _fadeIn;
+  late Animation<Offset> _slideUp;
+  bool _isValid = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1200),
+    _animController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.elasticOut,
-      ),
+    _fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeIn),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 1.0, curve: Curves.easeIn),
-      ),
+    _slideUp = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOut),
     );
 
-    _controller.forward();
+    _controller.addListener(() {
+      final value = double.tryParse(_controller.text);
+      setState(() {
+        _isValid = value != null && value >= 0;
+      });
+    });
+
+    _animController.forward();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _animController.dispose();
     super.dispose();
+  }
+
+  void _submit() {
+    final balance = double.tryParse(_controller.text);
+    if (balance != null) {
+      widget.onBalanceSet(balance);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Spacer(),
-            
-            // Animated Checkmark
-            ScaleTransition(
-              scale: _scaleAnimation,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade400, Colors.teal.shade400],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+      child: FadeTransition(
+        opacity: _fadeIn,
+        child: SlideTransition(
+          position: _slideUp,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withOpacity(0.5),
-                      blurRadius: 40,
-                      spreadRadius: 10,
+                  child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20), // Top spacer replacement
+                        
+                        // Icon
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F1729),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.account_balance,
+                            size: 50,
+                            color: Color(0xFF2D5F8D),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 40),
+                        
+                        // Title
+                        const Text(
+                          'Set Your Current Balance',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Description
+                        Text(
+                          'Enter your actual bank balance\nto get started',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.7),
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        
+                        const SizedBox(height: 40),
+                        
+                        // Balance Input
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: _isValid 
+                                  ? const Color(0xFF1E3A5F)
+                                  : Colors.white.withOpacity(0.1),
+                              width: 2,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: _controller,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            autofocus: true,
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                            ],
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: '0.00',
+                              hintStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                              prefixIcon: const Padding(
+                                padding: EdgeInsets.only(right: 12),
+                                child: Text(
+                                  '₹',
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2D5F8D),
+                                  ),
+                                ),
+                              ),
+                              prefixIconConstraints: const BoxConstraints(minWidth: 0),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Helper Text
+                        Text(
+                          'You can edit this anytime from the dashboard',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        
+                        const SizedBox(height: 40), // Spacer before button
+                        
+                        // Continue Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isValid ? _submit : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1E3A5F),
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: Colors.grey.shade800,
+                              disabledForegroundColor: Colors.grey.shade600,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20), // Bottom padding
+                      ],
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.check,
-                  size: 70,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 40),
-            
-            // Success Text
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                children: [
-                  const Text(
-                    'All Set!',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 16),
-                  // Description
-                Text(
-                  'Enter your actual bank balance right now.\nWe\'ll calculate your starting balance automatically.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white.withOpacity(0.7),
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
-                  const SizedBox(height: 32),
-                  
-                  // Loading indicator
-                  SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.tealAccent.withOpacity(0.5),
-                      ),
-                      strokeWidth: 2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const Spacer(),
-          ],
+              );
+            }
+          ),
         ),
       ),
     );

@@ -115,7 +115,7 @@ class _OnboardingScanningState extends State<OnboardingScanning>
                 'Found ${widget.importedCount} transactions',
                 style: TextStyle(
                   fontSize: 18,
-                  color: Colors.tealAccent,
+                  color: const Color(0xFF2D5F8D),
                   fontWeight: FontWeight.w600,
                 ),
               )

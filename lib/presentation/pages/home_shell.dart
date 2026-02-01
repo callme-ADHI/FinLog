@@ -45,7 +45,7 @@ class _HomeShellState extends State<HomeShell> {
           labelTextStyle: MaterialStateProperty.all(
             const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           ),
-          indicatorColor: Colors.teal.withOpacity(0.2),
+          indicatorColor: const Color(0xFF1E3A5F).withOpacity(0.3),
         ),
         child: NavigationBar(
           selectedIndex: _currentIndex,
@@ -59,27 +59,27 @@ class _HomeShellState extends State<HomeShell> {
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard, color: Colors.tealAccent),
+              selectedIcon: Icon(Icons.dashboard, color: Color(0xFF2D5F8D)),
               label: 'Home',
             ),
             NavigationDestination(
               icon: Icon(Icons.today_outlined),
-              selectedIcon: Icon(Icons.today, color: Colors.tealAccent),
+              selectedIcon: Icon(Icons.today, color: Color(0xFF2D5F8D)),
               label: 'Today',
             ),
             NavigationDestination(
               icon: Icon(Icons.list_alt),
-              selectedIcon: Icon(Icons.list_alt, color: Colors.tealAccent),
+              selectedIcon: Icon(Icons.list_alt, color: Color(0xFF2D5F8D)),
               label: 'History',
             ),
             NavigationDestination(
               icon: Icon(Icons.pie_chart_outline),
-              selectedIcon: Icon(Icons.pie_chart, color: Colors.tealAccent),
+              selectedIcon: Icon(Icons.pie_chart, color: Color(0xFF2D5F8D)),
               label: 'Analysis',
             ),
             NavigationDestination(
               icon: Icon(Icons.category_outlined),
-              selectedIcon: Icon(Icons.category, color: Colors.tealAccent),
+              selectedIcon: Icon(Icons.category, color: Color(0xFF2D5F8D)),
               label: 'Category',
             ),
           ],

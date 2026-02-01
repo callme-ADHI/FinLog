@@ -75,18 +75,11 @@ class _OnboardingWelcomeState extends State<OnboardingWelcome>
                 height: 120,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.teal.shade400, Colors.cyan.shade400],
+                    colors: [Color(0xFF1E3A5F), Color(0xFF2D5F8D)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.tealAccent.withOpacity(0.5),
-                      blurRadius: 30,
-                      spreadRadius: 5,
-                    ),
-                  ],
                 ),
                 child: const Icon(
                   Icons.account_balance_wallet,
@@ -148,13 +141,12 @@ class _OnboardingWelcomeState extends State<OnboardingWelcome>
                   child: ElevatedButton(
                     onPressed: widget.onNext,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.tealAccent,
-                      foregroundColor: Colors.black,
+                      backgroundColor: const Color(0xFF1E3A5F),
+                      foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 8,
-                      shadowColor: Colors.tealAccent.withOpacity(0.5),
+                      elevation: 0,
                     ),
                     child: const Text(
                       'Get Started',

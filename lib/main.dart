@@ -66,22 +66,22 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          primaryColor: Colors.teal,
+          scaffoldBackgroundColor: const Color(0xFF0A0F1E), // Very dark navy
+          primaryColor: const Color(0xFF1E3A5F), // Dark blue
           colorScheme: const ColorScheme.dark(
-            primary: Colors.teal,
-            secondary: Colors.tealAccent,
-            surface: Color(0xFF1E1E1E),
-
+            primary: Color(0xFF1E3A5F), // Dark blue
+            secondary: Color(0xFF2D5F8D), // Muted blue
+            surface: Color(0xFF0F1729), // Dark navy surface
+            background: Color(0xFF0A0F1E),
           ),
           useMaterial3: true,
-          fontFamily: 'Roboto', // Default, but explicit
+          fontFamily: 'Roboto',
           cardTheme: CardThemeData(
-            color: const Color(0xFF1E1E1E),
+            color: const Color(0xFF0F1729),
             elevation: 0,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: Colors.white.withOpacity(0.05))
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.white.withOpacity(0.08))
             ),
           ),
         ),

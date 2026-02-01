@@ -134,9 +134,9 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF0A0A0A),
-                  Color(0xFF1A1A2E),
-                  Color(0xFF16213E),
+                  Color(0xFF0A0F1E), // Very dark
+                  Color(0xFF0F1729), // Dark navy
+                  Color(0xFF1E3A5F), // Dark blue
                 ],
               ),
             ),
@@ -171,10 +171,15 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
           // Progress indicator
           if (_currentStep < 4)
             Positioned(
-              top: 50,
+              top: 0,
               left: 0,
               right: 0,
-              child: _buildProgressIndicator(),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: _buildProgressIndicator(),
+                ),
+              ),
             ),
         ],
       ),
@@ -187,13 +192,14 @@ class _OnboardingPageState extends State<OnboardingPage> with TickerProviderStat
       child: Row(
         children: List.generate(4, (index) {
           return Expanded(
-            child: Container(
-              height: 3,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              height: 4,
               margin: EdgeInsets.only(right: index < 3 ? 8 : 0),
               decoration: BoxDecoration(
                 color: index <= _currentStep
-                    ? Colors.tealAccent
-                    : Colors.white.withOpacity(0.2),
+                    ? const Color(0xFF2D5F8D) // Muted blue
+                    : Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

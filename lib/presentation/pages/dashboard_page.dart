@@ -38,7 +38,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final repo = context.read<TransactionRepository>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Deep dark bg
+      backgroundColor: const Color(0xFF0A0F1E),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -151,13 +151,13 @@ class _DashboardPageState extends State<DashboardPage> {
                      decoration: BoxDecoration(
                        gradient: LinearGradient(
                          colors: net >= 0 
-                           ? [Colors.teal.shade900, Colors.teal.shade800] 
-                           : [Colors.red.shade900, Colors.red.shade800],
+                           ? [const Color(0xFF0F1729), const Color(0xFF1E3A5F)] 
+                           : [const Color(0xFF7F1D1D), const Color(0xFF450A0A)],
                          begin: Alignment.topLeft,
                          end: Alignment.bottomRight,
                        ),
                        borderRadius: BorderRadius.circular(24),
-                       boxShadow: [BoxShadow(color: (net >= 0 ? Colors.teal : Colors.red).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                       boxShadow: [BoxShadow(color: (net >= 0 ? Colors.blueAccent : Colors.red).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
                      ),
                      child: Column(
                        crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,7 +225,7 @@ class _DashboardPageState extends State<DashboardPage> {
                             : Colors.red.withOpacity(0.2),
                           child: Icon(
                             t.type == TransactionType.credit ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: t.type == TransactionType.credit ? Colors.green : Colors.red,
+                            color: t.type == TransactionType.credit ? Color(0xFF2D5F8D) : Colors.redAccent,
                             size: 20,
                           ),
                         ),
@@ -241,7 +241,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         trailing: Text(
                           '${t.type == TransactionType.credit ? '+' : '-'}₹${t.amount.toStringAsFixed(0)}',
                           style: TextStyle(
-                            color: t.type == TransactionType.credit ? Colors.greenAccent : Colors.redAccent,
+                            color: t.type == TransactionType.credit ? Color(0xFF2D5F8D) : Colors.redAccent,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -269,13 +269,13 @@ class _DashboardPageState extends State<DashboardPage> {
             height: 160,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+                colors: [Color(0xFF0F1729), Color(0xFF1E3A5F)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Center(child: CircularProgressIndicator()),
+            child: const Center(child: CircularProgressIndicator(color: Colors.white)),
           );
         }
         
@@ -285,7 +285,7 @@ class _DashboardPageState extends State<DashboardPage> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+              colors: [Color(0xFF0F1729), Color(0xFF1E3A5F)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -305,30 +305,35 @@ class _DashboardPageState extends State<DashboardPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'Balance',
-                    style: TextStyle(color: Colors.white60, fontSize: 16),
+                    'Total Balance',
+                    style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white60, size: 20),
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white70, size: 20),
                     onPressed: () => _showEditBalanceDialog(context, repo, balance),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
+                    tooltip: 'Edit Balance',
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                '₹${balance.toStringAsFixed(2)}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '₹${balance.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Tap edit to adjust',
+                'Tap edit to adjust manually',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.4),
                   fontSize: 12,
@@ -346,38 +351,59 @@ class _DashboardPageState extends State<DashboardPage> {
     
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit Balance'),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Balance',
-            prefixText: '₹ ',
-            border: OutlineInputBorder(),
-            helperText: 'Enter your current bank balance',
-          ),
+      builder: (dialogContext) => Theme(
+        data: Theme.of(context).copyWith(
+          dialogBackgroundColor: const Color(0xFF1E1E1E),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Edit Balance', style: TextStyle(color: Colors.white)),
+          content: TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: true,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Current Balance',
+              labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+              prefixText: '₹ ',
+              prefixStyle: const TextStyle(color: Color(0xFF2D5F8D)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFF2D5F8D)),
+              ),
+              helperText: 'Update your actual bank balance',
+              helperStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+            ),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              final newBalance = double.tryParse(controller.text);
-              if (newBalance != null) {
-                await repo.updateCurrentBalance(newBalance);
-                if (context.mounted) {
-                  Navigator.pop(dialogContext);
-                  setState(() {});
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('Cancel', style: TextStyle(color: Colors.white.withOpacity(0.6))),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newBalance = double.tryParse(controller.text);
+                if (newBalance != null) {
+                  await repo.updateCurrentBalance(newBalance);
+                  if (context.mounted) {
+                    Navigator.pop(dialogContext);
+                    setState(() {});
+                  }
                 }
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A5F),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -389,9 +415,9 @@ class _DashboardPageState extends State<DashboardPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset:const Offset(0,2))],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 8, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,17 +426,32 @@ class _DashboardPageState extends State<DashboardPage> {
               children: [
                 Icon(Icons.pie_chart_outline, color: accentColor, size: 18),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(color: Colors.white60, fontSize: 14)),
+                Expanded(
+                  child: Text(
+                    title, 
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
             FutureBuilder<double>(
               future: fetcher(repo),
               builder: (context, snapshot) {
-                 if (!snapshot.hasData) return const Text('...');
-                 return Text(
-                   '₹${snapshot.data!.toStringAsFixed(0)}',
-                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                 if (!snapshot.hasData) {
+                   return SizedBox(
+                     height: 24,
+                     width: 24,
+                     child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
+                   );
+                 }
+                 return FittedBox(
+                   fit: BoxFit.scaleDown,
+                   child: Text(
+                     '₹${snapshot.data!.toStringAsFixed(0)}',
+                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                   ),
                  );
               },
             ),

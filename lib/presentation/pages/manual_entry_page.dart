@@ -21,6 +21,7 @@ class ManualEntryPage extends StatefulWidget {
 class _ManualEntryPageState extends State<ManualEntryPage> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+  final _merchantController = TextEditingController();
   final _descriptionController = TextEditingController();
   
   TransactionType _selectedType = TransactionType.debit;
@@ -35,6 +36,7 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
       _isEditing = true;
       final t = widget.transaction!;
       _amountController.text = t.amount.toString();
+      _merchantController.text = t.merchant.isNotEmpty ? t.merchant : '';
       _descriptionController.text = t.description ?? '';
       _selectedType = t.type;
       _selectedCategory = t.category;
@@ -48,6 +50,7 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
   @override
   void dispose() {
     _amountController.dispose();
+    _merchantController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -62,6 +65,7 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
     final randomSuffix = Random().nextInt(10000).toString().padLeft(4, '0');
     final manualId = "MANUAL_${timestamp}_$randomSuffix"; // Acts as UTR
     final description = _descriptionController.text.isEmpty ? "Manual Entry" : _descriptionController.text;
+    final merchant = _merchantController.text.isEmpty ? "Manual Entry" : _merchantController.text;
 
     // Hash Generation
     // hash = SHA256(amount + type + date + "MANUAL")
@@ -80,7 +84,7 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
       amount: amount,
       type: _selectedType,
       category: _selectedCategory,
-      merchant: widget.transaction?.merchant ?? "Manual Entry", 
+      merchant: merchant, 
       utr: widget.transaction?.utr ?? manualId, // Keep UTR if editing
       timestamp: _selectedDate,
       hash: hash,
@@ -143,6 +147,17 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
                       if (double.parse(value) <= 0) return 'Amount must be > 0';
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Merchant/Name
+                  TextFormField(
+                    controller: _merchantController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name / Heading',
+                      hintText: 'e.g. Grocery Store, Salary, etc.',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
                   const SizedBox(height: 16),
     
